@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyvien Nomor Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+        h1 {
+            font-size: 24px;
+            color: #0e76a8;
+        }
+        input, select {
+            padding: 10px;
+            margin: 10px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #333;
+            color: #fff;
+        }
+        button {
+            background-color: #0e76a8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #005f79;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Skyvien Nomor Manager</h1>
+        <input type="text" id="nomor" placeholder="Masukkan Nomor" />
+        <select id="kategori">
+            <option value="skyvien">Skyvien</option>
+            <option value="partner">Partner</option>
+            <option value="resellerV">Reseller V</option>
+            <option value="resellerGenx">Reseller GenX</option>
+        </select>
+        <input type="password" id="password" placeholder="Masukkan Password" />
+        <button onclick="addNumber()">Tambah Nomor</button>
+    </div>
+
+    <script>
+        const token = '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'; // Ganti dengan token GitHub kamu
+        const owner = 'YOUR_GITHUB_USERNAME'; // Ganti dengan username GitHub kamu
+        const repo = 'skyvien-data'; // Ganti dengan nama repositori kamu
+        const filePath = 'numbers.json'; // Path file yang ingin diubah
+        const correctPassword = 'yuri cantik'; // Password untuk menambah nomor
+
+        // Fungsi untuk menambah nomor ke GitHub
+        function addNumber() {
+            const nomor = document.getElementById('nomor').value;
+            const kategori = document.getElementById('kategori').value;
+            const password = document.getElementById('password').value;
+
+            if (password !== correctPassword) {
+                alert('Password salah!'); // Jika password tidak cocok
+                return;
+            }
+
+            if (!nomor) {
+                alert('Nomor tidak boleh kosong!');
+                return;
+            }
+
+            // Ambil data yang ada di GitHub
+            fetch(https://api.github.com/repos/${owner}/${repo}/contents/${filePath}, {
+                method: 'GET',
+                headers: {
+                    'Authorization': token ${token},
+                    'Accept': 'application/vnd.github.v3+json',
+                }
+            })
+            .then(response => response.json())
+            .then(responseData => {
+                const sha = responseData.sha;
+
+                // Ambil data JSON saat ini dan tambahkan nomor baru
+                const data = JSON.parse(atob(responseData.content));
+                data[kategori].push(nomor);
+
+                // Siapkan data untuk commit
+                const dataToCommit = {
+                    message: 'Tambah nomor baru',
+                    content: btoa(JSON.stringify(data)),  // Convert data ke Base64
+                    sha: sha,
+                };
+
+                // Kirim data untuk commit perubahan ke GitHub
+                fetch(https://api.github.com/repos/${owner}/${repo}/contents/${filePath}, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': token ${token},
+                        'Accept': 'application/vnd.github.v3+json',
+                    },
+                    body: JSON.stringify(dataToCommit),
+                })
+                .then(response => response.json())
+                .then(responseData => {
+                    alert('Nomor berhasil ditambahkan!');
+                    document.getElementById('nomor').value = ''; // Reset input
+                    document.getElementById('password').value = ''; // Reset password input
+                })
+                .catch(err => {
+                    console.error('Error saat menyimpan data:', err);
+                    alert('Gagal menambah nomor.');
+                });
+            })
+            .catch(err => {
+                console.error('Error saat mengambil file:', err);
+                alert('Gagal mengakses file di GitHub.');
+            });
+        }
+    </script>
+</body>
+</html>
