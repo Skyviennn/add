@@ -4,15 +4,60 @@
   <meta charset="UTF-8">
   <title>Login Panel DB</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #eef4fb; margin: 0; padding: 0; }
-    .container { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #333; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-    button { background: #007bff; color: white; border: none; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    #panel, #addUserForm, #loginForm { display: none; }
-    .info { text-align: center; color: green; margin-top: 10px; }
-    .error { text-align: center; color: red; margin-top: 10px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef4fb;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+      color: #333;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #panel, #addUserForm {
+      display: none;
+    }
+    .info, .error {
+      text-align: center;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .info {
+      color: #155724;
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      color: #721c24;
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+    }
   </style>
 </head>
 <body>
@@ -43,7 +88,7 @@
       <input type="password" id="newPassword" placeholder="Password baru" required>
       <button type="submit">Buat Akun</button>
     </form>
-    <p id="result" class="info"></p>
+    <p id="result"></p>
   </div>
 </div>
 
@@ -87,10 +132,16 @@
     return updateRes.status === 200 || updateRes.status === 201;
   }
 
+  function showMessage(text, isError = false) {
+    result.className = isError ? 'error' : 'info';
+    result.textContent = text;
+  }
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const user = document.getElementById('loginUsername').value.trim();
     const pass = document.getElementById('loginPassword').value.trim();
+    result.textContent = '';
     try {
       const accounts = await fetchFile(ACCOUNTS_FILE);
       if (accounts[user] && accounts[user] === pass) {
@@ -99,12 +150,10 @@
         panel.style.display = 'block';
         if (!isAdmin) addUserForm.style.display = 'none';
       } else {
-        result.className = 'error';
-        result.textContent = '❌ Username atau password salah.';
+        showMessage('❌ Username atau password salah.', true);
       }
-    } catch (err) {
-      result.className = 'error';
-      result.textContent = '❌ Gagal memuat akun.';
+    } catch {
+      showMessage('❌ Gagal memuat akun.', true);
     }
   });
 
@@ -114,36 +163,29 @@
     const name = document.getElementById('name').value.trim();
     const password = document.getElementById('password').value.trim();
     if (!phone || !name || !password) return;
-
+    result.textContent = '';
     try {
       const data = await fetchFile(DATA_FILE);
       data[phone] = { name, password };
       const success = await updateFile(DATA_FILE, data, `Tambah/update ${phone}`);
-      result.className = success ? 'info' : 'error';
-      result.textContent = success ? `✅ Data ${phone} berhasil disimpan.` : '❌ Gagal menyimpan data.';
+      showMessage(success ? `✅ Data ${phone} berhasil disimpan.` : '❌ Gagal menyimpan data.', !success);
     } catch {
-      result.className = 'error';
-      result.textContent = '❌ Terjadi kesalahan saat menyimpan.';
+      showMessage('❌ Terjadi kesalahan saat menyimpan.', true);
     }
   });
 
   deleteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const phone = document.getElementById('delPhone').value.trim();
+    result.textContent = '';
     try {
       const data = await fetchFile(DATA_FILE);
-      if (!data[phone]) {
-        result.className = 'error';
-        result.textContent = '❌ Nomor tidak ditemukan.';
-        return;
-      }
+      if (!data[phone]) return showMessage('❌ Nomor tidak ditemukan.', true);
       delete data[phone];
       const success = await updateFile(DATA_FILE, data, `Hapus ${phone}`);
-      result.className = success ? 'info' : 'error';
-      result.textContent = success ? `✅ Data ${phone} berhasil dihapus.` : '❌ Gagal menghapus data.';
+      showMessage(success ? `✅ Data ${phone} berhasil dihapus.` : '❌ Gagal menghapus data.', !success);
     } catch {
-      result.className = 'error';
-      result.textContent = '❌ Terjadi kesalahan.';
+      showMessage('❌ Terjadi kesalahan.', true);
     }
   });
 
@@ -151,25 +193,226 @@
     e.preventDefault();
     const newUser = document.getElementById('newUsername').value.trim();
     const newPass = document.getElementById('newPassword').value.trim();
-    if (!isAdmin) {
-      result.className = 'error';
-      result.textContent = '❌ Hanya admin yang bisa membuat akun.';
-      return;
-    }
+    result.textContent = '';
+    if (!isAdmin) return showMessage('❌ Hanya admin yang bisa membuat akun.', true);
     try {
       const accounts = await fetchFile(ACCOUNTS_FILE);
-      if (accounts[newUser]) {
-        result.className = 'error';
-        result.textContent = '❌ Username sudah ada.';
-        return;
-      }
+      if (accounts[newUser]) return showMessage('❌ Username sudah ada.', true);
       accounts[newUser] = newPass;
       const success = await updateFile(ACCOUNTS_FILE, accounts, `Tambah akun ${newUser}`);
-      result.className = success ? 'info' : 'error';
-      result.textContent = success ? `✅ Akun ${newUser} berhasil dibuat.` : '❌ Gagal membuat akun.';
+      showMessage(success ? `✅ Akun ${newUser} berhasil dibuat.` : '❌ Gagal membuat akun.', !success);
     } catch {
-      result.className = 'error';
-      result.textContent = '❌ Terjadi kesalahan.';
+      showMessage('❌ Terjadi kesalahan.', true);
+    }
+  });
+</script>
+
+</body>
+</html> <!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Panel DB</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef4fb;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+      color: #333;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #panel, #addUserForm {
+      display: none;
+    }
+    .info, .error {
+      text-align: center;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .info {
+      color: #155724;
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      color: #721c24;
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Login</h2>
+  <form id="loginForm">
+    <input type="text" id="loginUsername" placeholder="Username" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+  </form>
+
+  <div id="panel">
+    <h2>Panel Database</h2>
+    <form id="dataForm">
+      <input type="text" id="phone" placeholder="Nomor" required>
+      <input type="text" id="name" placeholder="Nama" required>
+      <input type="text" id="password" placeholder="Password" required>
+      <button type="submit">Tambah / Update Data</button>
+    </form>
+    <form id="deleteForm">
+      <input type="text" id="delPhone" placeholder="Nomor yang ingin dihapus" required>
+      <button type="submit" style="background:red">Hapus Data</button>
+    </form>
+    <form id="addUserForm">
+      <h3>Buat Akun Baru (Khusus Admin)</h3>
+      <input type="text" id="newUsername" placeholder="Username baru" required>
+      <input type="password" id="newPassword" placeholder="Password baru" required>
+      <button type="submit">Buat Akun</button>
+    </form>
+    <p id="result"></p>
+  </div>
+</div>
+
+<script>
+  const GITHUB_TOKEN = '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';
+  const REPO_OWNER = 'Skyviennn';
+  const REPO_NAME = 'database0';
+  const DATA_FILE = 'user_data.json';
+  const ACCOUNTS_FILE = 'accounts.json';
+
+  const loginForm = document.getElementById('loginForm');
+  const dataForm = document.getElementById('dataForm');
+  const deleteForm = document.getElementById('deleteForm');
+  const addUserForm = document.getElementById('addUserForm');
+  const panel = document.getElementById('panel');
+  const result = document.getElementById('result');
+
+  let isAdmin = false;
+
+  async function fetchFile(file) {
+    const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${file}`);
+    return await res.json();
+  }
+
+  async function updateFile(file, jsonData, message) {
+    const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${file}`);
+    const shaJson = await shaRes.json();
+    const base64Content = btoa(unescape(encodeURIComponent(JSON.stringify(jsonData, null, 2))));
+    const updateRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${file}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message,
+        content: base64Content,
+        sha: shaJson.sha
+      })
+    });
+    return updateRes.status === 200 || updateRes.status === 201;
+  }
+
+  function showMessage(text, isError = false) {
+    result.className = isError ? 'error' : 'info';
+    result.textContent = text;
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = document.getElementById('loginUsername').value.trim();
+    const pass = document.getElementById('loginPassword').value.trim();
+    result.textContent = '';
+    try {
+      const accounts = await fetchFile(ACCOUNTS_FILE);
+      if (accounts[user] && accounts[user] === pass) {
+        isAdmin = user === 'sky';
+        loginForm.style.display = 'none';
+        panel.style.display = 'block';
+        if (!isAdmin) addUserForm.style.display = 'none';
+      } else {
+        showMessage('❌ Username atau password salah.', true);
+      }
+    } catch {
+      showMessage('❌ Gagal memuat akun.', true);
+    }
+  });
+
+  dataForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('phone').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!phone || !name || !password) return;
+    result.textContent = '';
+    try {
+      const data = await fetchFile(DATA_FILE);
+      data[phone] = { name, password };
+      const success = await updateFile(DATA_FILE, data, `Tambah/update ${phone}`);
+      showMessage(success ? `✅ Data ${phone} berhasil disimpan.` : '❌ Gagal menyimpan data.', !success);
+    } catch {
+      showMessage('❌ Terjadi kesalahan saat menyimpan.', true);
+    }
+  });
+
+  deleteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('delPhone').value.trim();
+    result.textContent = '';
+    try {
+      const data = await fetchFile(DATA_FILE);
+      if (!data[phone]) return showMessage('❌ Nomor tidak ditemukan.', true);
+      delete data[phone];
+      const success = await updateFile(DATA_FILE, data, `Hapus ${phone}`);
+      showMessage(success ? `✅ Data ${phone} berhasil dihapus.` : '❌ Gagal menghapus data.', !success);
+    } catch {
+      showMessage('❌ Terjadi kesalahan.', true);
+    }
+  });
+
+  addUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newUser = document.getElementById('newUsername').value.trim();
+    const newPass = document.getElementById('newPassword').value.trim();
+    result.textContent = '';
+    if (!isAdmin) return showMessage('❌ Hanya admin yang bisa membuat akun.', true);
+    try {
+      const accounts = await fetchFile(ACCOUNTS_FILE);
+      if (accounts[newUser]) return showMessage('❌ Username sudah ada.', true);
+      accounts[newUser] = newPass;
+      const success = await updateFile(ACCOUNTS_FILE, accounts, `Tambah akun ${newUser}`);
+      showMessage(success ? `✅ Akun ${newUser} berhasil dibuat.` : '❌ Gagal membuat akun.', !success);
+    } catch {
+      showMessage('❌ Terjadi kesalahan.', true);
     }
   });
 </script>
