@@ -1,137 +1,178 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skyvien Nomor Manager</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            background: #222;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-            max-width: 400px;
-            margin: auto;
-        }
-        h1 {
-            font-size: 24px;
-            color: #0e76a8;
-        }
-        input, select {
-            padding: 10px;
-            margin: 10px;
-            width: 100%;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            background-color: #333;
-            color: #fff;
-        }
-        button {
-            background-color: #0e76a8;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #005f79;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Login Panel DB</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #eef4fb; margin: 0; padding: 0; }
+    .container { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    #panel, #addUserForm, #loginForm { display: none; }
+    .info { text-align: center; color: green; margin-top: 10px; }
+    .error { text-align: center; color: red; margin-top: 10px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Skyvien Nomor Manager</h1>
-        <input type="text" id="nomor" placeholder="Masukkan Nomor" />
-        <select id="kategori">
-            <option value="skyvien">Skyvien</option>
-            <option value="partner">Partner</option>
-            <option value="resellerV">Reseller V</option>
-            <option value="resellerGenx">Reseller GenX</option>
-        </select>
-        <input type="password" id="password" placeholder="Masukkan Password" />
-        <button onclick="addNumber()">Tambah Nomor</button>
-    </div>
 
-    <script>
-        const token = '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'; // Ganti dengan token GitHub kamu
-        const owner = 'Skyviennn'; // Ganti dengan username GitHub kamu
-        const repo = 'data-nomor';// Ganti dengan nama repositori kamu
-        const filePath = 'numbers.json'; // Path file yang ingin diubah
-        const correctPassword = 'yuri cantik'; // Password untuk menambah nomor
+<div class="container">
+  <h2>Login</h2>
+  <form id="loginForm">
+    <input type="text" id="loginUsername" placeholder="Username" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+  </form>
 
-        // Fungsi untuk menambah nomor ke GitHub
-        function addNumber() {
-            const nomor = document.getElementById('nomor').value;
-            const kategori = document.getElementById('kategori').value;
-            const password = document.getElementById('password').value;
+  <div id="panel">
+    <h2>Panel Database</h2>
+    <form id="dataForm">
+      <input type="text" id="phone" placeholder="Nomor" required>
+      <input type="text" id="name" placeholder="Nama" required>
+      <input type="text" id="password" placeholder="Password" required>
+      <button type="submit">Tambah / Update Data</button>
+    </form>
+    <form id="deleteForm">
+      <input type="text" id="delPhone" placeholder="Nomor yang ingin dihapus" required>
+      <button type="submit" style="background:red">Hapus Data</button>
+    </form>
+    <form id="addUserForm">
+      <h3>Buat Akun Baru (Khusus Admin)</h3>
+      <input type="text" id="newUsername" placeholder="Username baru" required>
+      <input type="password" id="newPassword" placeholder="Password baru" required>
+      <button type="submit">Buat Akun</button>
+    </form>
+    <p id="result" class="info"></p>
+  </div>
+</div>
 
-            if (password !== correctPassword) {
-                alert('Password salah!'); // Jika password tidak cocok
-                return;
-            }
+<script>
+  const GITHUB_TOKEN = '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';
+  const REPO_OWNER = 'Skyviennn';
+  const REPO_NAME = 'database0';
+  const DATA_FILE = 'user_data.json';
+  const ACCOUNTS_FILE = 'accounts.json';
 
-            if (!nomor) {
-                alert('Nomor tidak boleh kosong!');
-                return;
-            }
+  const loginForm = document.getElementById('loginForm');
+  const dataForm = document.getElementById('dataForm');
+  const deleteForm = document.getElementById('deleteForm');
+  const addUserForm = document.getElementById('addUserForm');
+  const panel = document.getElementById('panel');
+  const result = document.getElementById('result');
 
-            // Ambil data yang ada di GitHub
-            fetch(https://api.github.com/repos/${owner}/${repo}/contents/${filePath}, {
-                method: 'GET',
-                headers: {
-                    'Authorization': token ${token},
-                    'Accept': 'application/vnd.github.v3+json',
-                }
-            })
-            .then(response => response.json())
-            .then(responseData => {
-                const sha = responseData.sha;
+  let isAdmin = false;
 
-                // Ambil data JSON saat ini dan tambahkan nomor baru
-                const data = JSON.parse(atob(responseData.content));
-                data[kategori].push(nomor);
+  async function fetchFile(file) {
+    const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${file}`);
+    return await res.json();
+  }
 
-                // Siapkan data untuk commit
-                const dataToCommit = {
-                    message: 'Tambah nomor baru',
-                    content: btoa(JSON.stringify(data)),  // Convert data ke Base64
-                    sha: sha,
-                };
+  async function updateFile(file, jsonData, message) {
+    const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${file}`);
+    const shaJson = await shaRes.json();
+    const base64Content = btoa(unescape(encodeURIComponent(JSON.stringify(jsonData, null, 2))));
+    const updateRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${file}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message,
+        content: base64Content,
+        sha: shaJson.sha
+      })
+    });
+    return updateRes.status === 200 || updateRes.status === 201;
+  }
 
-                // Kirim data untuk commit perubahan ke GitHub
-                fetch(https://api.github.com/repos/${owner}/${repo}/contents/${filePath}, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': token ${token},
-                        'Accept': 'application/vnd.github.v3+json',
-                    },
-                    body: JSON.stringify(dataToCommit),
-                })
-                .then(response => response.json())
-                .then(responseData => {
-                    alert('Nomor berhasil ditambahkan!');
-                    document.getElementById('nomor').value = ''; // Reset input
-                    document.getElementById('password').value = ''; // Reset password input
-                })
-                .catch(err => {
-                    console.error('Error saat menyimpan data:', err);
-                    alert('Gagal menambah nomor.');
-                });
-            })
-            .catch(err => {
-                console.error('Error saat mengambil file:', err);
-                alert('Gagal mengakses file di GitHub.');
-            });
-        }
-    </script>
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = document.getElementById('loginUsername').value.trim();
+    const pass = document.getElementById('loginPassword').value.trim();
+    try {
+      const accounts = await fetchFile(ACCOUNTS_FILE);
+      if (accounts[user] && accounts[user] === pass) {
+        isAdmin = user === 'sky';
+        loginForm.style.display = 'none';
+        panel.style.display = 'block';
+        if (!isAdmin) addUserForm.style.display = 'none';
+      } else {
+        result.className = 'error';
+        result.textContent = '❌ Username atau password salah.';
+      }
+    } catch (err) {
+      result.className = 'error';
+      result.textContent = '❌ Gagal memuat akun.';
+    }
+  });
+
+  dataForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('phone').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!phone || !name || !password) return;
+
+    try {
+      const data = await fetchFile(DATA_FILE);
+      data[phone] = { name, password };
+      const success = await updateFile(DATA_FILE, data, `Tambah/update ${phone}`);
+      result.className = success ? 'info' : 'error';
+      result.textContent = success ? `✅ Data ${phone} berhasil disimpan.` : '❌ Gagal menyimpan data.';
+    } catch {
+      result.className = 'error';
+      result.textContent = '❌ Terjadi kesalahan saat menyimpan.';
+    }
+  });
+
+  deleteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('delPhone').value.trim();
+    try {
+      const data = await fetchFile(DATA_FILE);
+      if (!data[phone]) {
+        result.className = 'error';
+        result.textContent = '❌ Nomor tidak ditemukan.';
+        return;
+      }
+      delete data[phone];
+      const success = await updateFile(DATA_FILE, data, `Hapus ${phone}`);
+      result.className = success ? 'info' : 'error';
+      result.textContent = success ? `✅ Data ${phone} berhasil dihapus.` : '❌ Gagal menghapus data.';
+    } catch {
+      result.className = 'error';
+      result.textContent = '❌ Terjadi kesalahan.';
+    }
+  });
+
+  addUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newUser = document.getElementById('newUsername').value.trim();
+    const newPass = document.getElementById('newPassword').value.trim();
+    if (!isAdmin) {
+      result.className = 'error';
+      result.textContent = '❌ Hanya admin yang bisa membuat akun.';
+      return;
+    }
+    try {
+      const accounts = await fetchFile(ACCOUNTS_FILE);
+      if (accounts[newUser]) {
+        result.className = 'error';
+        result.textContent = '❌ Username sudah ada.';
+        return;
+      }
+      accounts[newUser] = newPass;
+      const success = await updateFile(ACCOUNTS_FILE, accounts, `Tambah akun ${newUser}`);
+      result.className = success ? 'info' : 'error';
+      result.textContent = success ? `✅ Akun ${newUser} berhasil dibuat.` : '❌ Gagal membuat akun.';
+    } catch {
+      result.className = 'error';
+      result.textContent = '❌ Terjadi kesalahan.';
+    }
+  });
+</script>
+
 </body>
 </html>
